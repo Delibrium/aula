@@ -88,12 +88,12 @@ instance FormPage PageDelegateVote where
                 | u2 ^. _Id == uid = GT
                 | otherwise        = compare (u1 ^. userLogin) (u2 ^. userLogin)
 
-        h1_ [class_ "main-heading"] "Stimme beauftragen"
+        h1_ [class_ "main-heading", data_ "i18n" "topic-delegate"] "Stimme beauftragen"
         div_ [class_ "sub-heading"] $ do
-            let delegationText name = "Wähle einen Beauftragten für " <> show name
-            toHtml . delegationText $ uilabelST scope
+            span_ [data_ "i18n" "delegate-select"] "Wähle einen Beauftragten für "
+            toHtml . show $ uilabelST scope
             br_ []
-            "Du kannst deine Beauftragung widerrufen, indem du sie nochmal anklickst."
+            span_ [data_ "i18n" "delegate-remove"] "Du kannst deine Beauftragung widerrufen, indem du sie nochmal anklickst."
         ul_ $ do
             DF.inputHidden "selected-delegate" v
             div_ [class_ "delegate-image-select"] $ do
@@ -109,7 +109,7 @@ instance FormPage PageDelegateVote where
                         span_ $ toHtml unm
                 div_ [class_ "button-group clearfix"] $ do
                     unless (null options') $
-                        DF.inputSubmit "beauftragen"
+                        input_ [type_ "submit", data_ "i18n" "[value]delegate-button", value_ "beauftragen"]
                     cancelButton p ()
 
 pageDelegateVoteSuccessMsg :: ActionM m => t -> PageDelegationVotePayload -> u -> m ST
@@ -159,7 +159,7 @@ instance ToHtml PageDelegationNetwork where
     toHtml = toHtmlRaw
     toHtmlRaw p@(PageDelegationNetwork dscopeCurrent dscopeForest delegations) = semanticDiv p $ do
         div_ [class_ "container-delagation-network"] $ do
-            h1_ [class_ "main-heading"] "Beauftragungsnetzwerk"
+            h1_ [class_ "main-heading", data_ "i18n" "delegation-network-header"] "Beauftragungsnetzwerk"
 
             Lucid.script_ $ "var aulaDScopeCurrent  = " <> cs (Aeson.encode (toUrlPiece dscopeCurrent))
             Lucid.script_ $ "var aulaDScopeForest   = " <> cs (Aeson.encode dscopeForest)

@@ -84,7 +84,7 @@ instance ToHtml ListItemIdea where
 
                         readyfortable = do
                             div_ [class_ "m-table indicator-item"] $ do
-                                  div_ [class_ "indicator-icon"] "Kann auf den Tisch"
+                                  div_ [class_ "indicator-icon", data_ "i18n" "idea-on-table"] "Kann auf den Tisch"
 
                     when (isWinning idea) $ do
                         div_ [class_ "icon-winner indicator-item m-inline m-display-only"] $ do
@@ -104,7 +104,7 @@ instance ToHtml ListItemIdea where
                             i_ [class_ "meta-list-icon icon-comment-o"] nil
                             let s = idea ^. ideaComments . commentsCount
                             s ^. showed . html
-                            if s == 1 then " Verbesserungsvorschlag" else " Verbesserungsvorschläge"
+                            if s == 1 then span_ [data_ "i18n" "idea-suggestion"] " Verbesserungsvorschlag" else span_ [data_ "i18n" "idea-suggestions"]" Verbesserungsvorschläge"
 
                     toHtml $ IdeaVoteLikeBars stats
 
@@ -114,9 +114,10 @@ instance ToHtml ListItemIdeas where
         ideaListHeader whatPage ideasQuery
         callToActionOnList'
             (do
-                "Keine Ideen" <> mCatInfo <> ".  "
+                span_ [data_ "i18n" "space-no-ideas-search-results"] "Keine Ideen"
+                span_ mCatInfo <> ".  "
                 when canCreateIdea $
-                    a_ [href_ createIdeaLink] "Erstelle Deine eigene Idee!")
+                    a_ [href_ createIdeaLink, data_ "i18n" "space-ask-on-no-ideas-search-results"] "Erstelle Deine eigene Idee!")
             (toHtml . ListItemIdea ctx whatPage)
             ideasAndNumVoters
       where
@@ -130,7 +131,7 @@ instance ToHtml ListItemIdeas where
             IdeaInUserProfile _usr    -> ctx ^. capCtxUser . to isStudent
 
         mCatInfo =
-            ideasQuery ^. ideasQueryF . _IdeasWithCat . uilabeled . to (" in der Kategorie " <>)
+          ideasQuery ^. ideasQueryF . _IdeasWithCat . uilabeled . to (\x -> span_ [data_ "i18n" "in-category"] " in der Kategorie " >> span_ [data_ "i18n" ("category-" <> (ideasQuery ^. ideasQueryF . _IdeasWithCat . uilabeled))] x)
 
         createIdeaLink = case whatPage of
             IdeaInIdeasOverview loc  -> U.createIdea loc

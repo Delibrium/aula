@@ -24,23 +24,23 @@ import Frontend.Prelude
 displayPhaseWithTime :: Monad m => Timestamp -> Phase -> HtmlT m ()
 displayPhaseWithTime now phase = do
     span_ [class_ "sub-heading"] $ do
-        phase ^. uilabeledST . html
+        phase ^. uilabeledST . to (\x -> span_ [data_ "i18n" $ "idea-phase-" <> x] $ toHtml x)
         " "
-        phase ^. displayPhaseTime now . html
+        phase ^. displayPhaseTime now . to (mapM_ (\(i18n, s) -> if i18n /= "number" then if i18n == "time-stamp" then toHtml s else span_ [data_ "i18n" $ "idea-phase-time-" <> i18n] $ toHtml s else toHtml i18n))
 
-displayPhaseTime :: Monoid r => Timestamp -> Getting r Phase String
+displayPhaseTime :: Monoid r => Timestamp -> Getting r Phase [(ST, String)]
 displayPhaseTime now = phaseStatus . to info
   where
     info t@(ActivePhase stamp) =
-        "(Endet " <> displayTimespan t <> showStamp stamp <> ")"
+        [("no-holiday-Ends","(Endet ")] ++ displayTimespan t ++ [("time-stamp", showStamp stamp), ("close", ")")]
     info t@(FrozenPhase _) =
-        "(Endet " <> displayTimespanFrozen t <> ")"
+        [("holiday", "(Endet " <> displayTimespanFrozen t <> ")")]
 
     displayTimespan st = case stampToDays st of
         -- n | n < 0 -> assert False $ error "displayPhaseTime"  -- (this breaks the test suite)
-        0 -> "heute"
-        1 -> "morgen"
-        n -> "in " <> show n <> " Tagen"
+        0 -> [("today", "heute")]
+        1 -> [("tomorrow", "morgen")]
+        n -> [("in", "in "), ("number", show n), ("days"," Tagen")]
 
     displayTimespanFrozen st = (cs . show . stampToDays $ st) <> " Tage nach den Ferien"
     stampToDays st = timespanDays (st ^. phaseLeftoverFrom now) + 1

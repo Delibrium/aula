@@ -362,7 +362,7 @@ searchBox fld action placehld =
     div_ [class_ "inline-search-container"] $ do
         formMethod_ "GET" [class_ "form"] action $ do
             input_ [name_ fld, type_ "text", class_ "inline-search-input",
-                    placeholder_ placehld]
+                    data_ "i18n" "[placeholder]search-input", placeholder_ placehld]
             button_ [type_ "submit", class_ "inline-search-button"] $ i_ [class_ "icon-search"] nil
 
 
@@ -676,7 +676,7 @@ form formHandler = getH :<|> postH
         (redirectOf page &&& formMessage page result) <$> processor result
 
 cancelButton :: (FormPage p, Monad m) => p -> FormPageResult p -> HtmlT m ()
-cancelButton p r = a_ [class_ "btn", href_ $ redirectOf p r] "Abbrechen"
+cancelButton p r = a_ [class_ "btn", href_ $ redirectOf p r, data_ "i18n" "cancel"] "Abbrechen"
 
 
 -- * frame creation
@@ -868,7 +868,7 @@ pageFrame frame = do
     let p = frame ^. frameBody
         bodyClasses = extraBodyClasses p
     head_ $ do
-        title_ "AuLA"
+        title_ "digital.D"
         link_ [rel_ "stylesheet", href_ $ P.TopStatic "css/all.css"]
         link_ [rel_ "icon", href_ $ P.TopStatic "favicon.ico"]
 
@@ -894,8 +894,8 @@ headerMarkup mUser = header_ [class_ "main-header", id_ "main-header"] $ do
             Nothing -> nil
             Just usr -> do
                 ul_ [class_ "main-header-menu"] $ do
-                    li_ $ a_ [href_ P.listSpaces] "Start"
-                    li_ $ a_ [href_ P.delegationView] "Beauftragungen"
+                    li_ $ a_ [href_ P.listSpaces, data_ "i18n" "header-start"] "Start"
+                    li_ $ a_ [href_ P.delegationView, data_ "i18n" "header-delegation"] "Beauftragungen"
 
                 -- mobile menu
                 button_ [id_ "mobile-menu-button"] $ do
@@ -916,20 +916,24 @@ headerMarkup mUser = header_ [class_ "main-header", id_ "main-header"] $ do
                             li_ [class_ "pop-menu-list-item"]
                                 . a_ [href_ $ P.viewUserProfile usr] $ do
                                 i_ [class_ "pop-menu-list-icon icon-eye"] nil
-                                "Profil anzeigen"
+                                span_ [data_ "i18n" "menu-profile-view"] $ do
+                                  "Profil anzeigen"
                             li_ [class_ "pop-menu-list-item"]
                                 . a_ [href_ P.userSettings] $ do
                                 i_ [class_ "pop-menu-list-icon icon-sun-o"] nil
-                                "Einstellungen"
+                                span_ [data_ "i18n" "menu-settings"] $ do
+                                  "Einstellungen"
                             when (isAdmin usr) .
                                 li_ [class_ "pop-menu-list-item"]
                                     . a_ [href_ P.adminDuration] $ do
                                     i_ [class_ "pop-menu-list-icon icon-bolt"] nil
-                                    "Prozessverwaltung"
+                                    span_ [data_ "i18n" "menu-administration"] $ do
+                                      "Prozessverwaltung"
                             li_ [class_ "pop-menu-list-item"]
                                 . a_ [href_ P.logout] $ do
                                 i_ [class_ "pop-menu-list-icon icon-power-off"] nil
-                                "Logout"
+                                span_ [data_ "i18n" "menu-logout"] $ do
+                                  "Logout"
 
 renderStatusMessages :: (Monad m) => [StatusMessage] -> HtmlT m ()
 renderStatusMessages [] = nil
@@ -947,8 +951,8 @@ footerMarkup devmode extra = do
     footer_ [class_ "main-footer"] $ do
         div_ [class_ "grid"] $ do
             ul_ [class_ "main-footer-menu"] $ do
-                li_ $ a_ [href_ P.terms] "Nutzungsbedingungen"
-                li_ $ a_ [href_ P.imprint] "Impressum"
+                li_ $ a_ [href_ P.terms, data_ "i18n" "footer-user-terms"] "Nutzungsbedingungen"
+                li_ $ a_ [href_ P.imprint, data_ "i18n" "footer-impressum"] "Impressum"
             span_ [class_ "main-footer-blurb"] $ do
                 "Made with \x2665 by Liqd"
                 when devmode $ do
@@ -959,5 +963,14 @@ footerMarkup devmode extra = do
                         "[create page sample]"  -- see 'Frontend.createPageSamples" for an explanation.
     script_ [src_ $ P.TopStatic "third-party/modernizr/modernizr-custom.js"]
     script_ [src_ $ P.TopStatic "third-party/showdown/dist/showdown.min.js"]
+    script_ [src_ $ P.TopStatic "third-party/jquery/jquery-3.3.1.min.js"]
+    script_ [src_ $ P.TopStatic "third-party/jquery.i18n/jquery.i18n.js"]
+    script_ [src_ $ P.TopStatic "third-party/jquery.i18n/jquery.i18n.messagestore.js"]
+    script_ [src_ $ P.TopStatic "third-party/jquery.i18n/jquery.i18n.fallbacks.js"]
+    script_ [src_ $ P.TopStatic "third-party/jquery.i18n/jquery.i18n.parser.js"]
+    script_ [src_ $ P.TopStatic "third-party/jquery.i18n/jquery.i18n.emitter.js"]
+    script_ [src_ $ P.TopStatic "third-party/jquery.i18n/jquery.i18n.language.js"]
     script_ [src_ $ P.TopStatic "js/custom.js"]
+    script_ [src_ $ P.TopStatic "js/i18n.js"]
+    script_ [src_ $ P.TopStatic "js/translate.js"]
     extra

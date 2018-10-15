@@ -46,7 +46,7 @@ checkLogin (LoginFormData uLogin pass) = do
     muser <- query $ findUserByLogin (mkUserLogin uLogin)
     pure $ case muser of
         Just user | verifyUserPass pass (user ^. userPassword) -> pure user
-        _ -> Error $ span_ [class_ "form-error"] "Falscher Nutzername und/oder falsches Passwort."
+        _ -> Error $ span_ [class_ "form-error", data_ "i18n" "login-login-error"] "Falscher Nutzername und/oder falsches Passwort."
 
 instance FormPage PageHomeWithLoginPrompt where
     type FormPagePayload PageHomeWithLoginPrompt = User
@@ -63,16 +63,16 @@ instance FormPage PageHomeWithLoginPrompt where
     formPage v form p@(PageHomeWithLoginPrompt loginDemoHints) =
         semanticDiv p $ do
             div_ [class_ "login-register-form"] $ do
-                h1_ [class_ "main-heading"] "Willkommen bei Aula"
+                h1_ [class_ "main-heading", data_ "i18n" "login-welcome"] "Willkommen bei Aula"
                 div_ . form $ do
-                    inputText_     [placeholder_ "Dein Benutzername"] "user" v
-                    inputPassword_ [placeholder_ "Dein Passwort"] "pass" v
+                    inputText_     [placeholder_ "Dein Benutzername", data_ "i18n" "login-login"] "user" v
+                    inputPassword_ [placeholder_ "Dein Passwort", data_ "i18n" "login-password"] "pass" v
                     inputSubmit_   [] "Login"
                     p_ [class_ "text-muted login-register-form-notice"] $ do
-                        a_ [href_ U.resetPasswordViaEmail]
+                        a_ [href_ U.resetPasswordViaEmail, data_ "i18n" "login-password-reminder"]
                             "Wenn Du eine email-Adresse eingegeben hast, kannst du dein Passwort hier neu setzen."
-                        br_ nil
-                        "Solltest du dein Passwort nicht mehr kennen und keine email-Adresse haben, melde dich bitte bei den Admins euer Schule."
+                        p_ [data_ "i18n" "login-password-reminder-noemail"]
+                            "Solltest du dein Passwort nicht mehr kennen und keine email-Adresse haben, melde dich bitte bei den Admins euer Schule."
             toHtml loginDemoHints
 
 

@@ -46,7 +46,7 @@ formSelectorFromCategory = ("select-.idea-category." <>) . cs . show . fromEnum
 formPageSelectCategory :: Monad m => View (HtmlT m ()) -> HtmlT m ()
 formPageSelectCategory v = do
     label_ $ do
-        span_ [class_ "label-text"]
+        span_ [class_ "label-text", data_ "i18n" "idea-select-category"]
             "Kann deine Idee einer der folgenden Kategorieren zugeordnet werden?"
         DF.inputHidden "idea-category" v
         div_ [class_ "icon-list m-inline category-image-select"] $ do
@@ -66,23 +66,24 @@ newtype CategoryMiniLabel = CategoryMiniLabel Category
 instance ToHtml CategoryMiniLabel where
     toHtmlRaw = toHtml
     toHtml (CategoryMiniLabel cat) =
-        li_ [class_ $ "icon-" <> toUrlPiece cat] . span_ $ uilabel cat
+        li_ [class_ $ "icon-" <> toUrlPiece cat] . span_ [data_ "i18n" $ "category-" <> uilabel cat] $ uilabel cat
 
 categoryFilterButtons :: Monad m => WhatListPage -> IdeasQuery -> HtmlT m ()
 categoryFilterButtons whatListPage q = div_ [class_ "icon-list"] $ do
-    p_ $ b_ "Filtere nach Kategorie"
+    p_ $ b_ [data_ "i18n" "space-idea-filters"] "Filtere nach Kategorie"
     br_ []
     ul_ $ do
         li_ [ class_ . ST.unwords $
                 "icon-all-cats" : [ "m-active" | q ^. ideasQueryF == AllIdeas ]
             ] .
-            a_ [href_ $ pathToIdeaListPage whatListPage (Just $ q & ideasQueryF .~ AllIdeas)] $
+            a_ [href_ $ pathToIdeaListPage whatListPage (Just $ q & ideasQueryF .~ AllIdeas),
+                data_ "i18n" "space-all-ideas"] $
                 "Alle Kategorien"
         for_ [minBound..] $ \cat -> do
             li_ [ class_ . ST.unwords $
                     ("icon-" <> toUrlPiece cat) : [ "m-active" | q ^. ideasQueryF == IdeasWithCat cat ]
                 ] .
-                a_ [href_ $ pathToIdeaListPage whatListPage (Just $ q & ideasQueryF %~ toggleIdeasFilter cat)] $
+                a_ [href_ $ pathToIdeaListPage whatListPage (Just $ q & ideasQueryF %~ toggleIdeasFilter cat), data_ "i18n" $ "category-" <> uilabel cat] $
                     uilabel cat
 
 -- * local types
@@ -98,4 +99,5 @@ instance ToHtml CategorySelectButton where
     toHtml (CategorySelectButton cat) = li_ [class_ $ "icon-" <> toUrlPiece cat] .
         span_ [ class_ "icon-list-button"
               , id_ $ "select-.idea-category." <> (cs . show $ fromEnum cat)
+              , data_ "i18n" $ "category-" <> uilabel cat
               ] $ uilabel cat

@@ -93,13 +93,13 @@ instance ToHtml PageOverviewOfWildIdeas where
         toHtml $ Tabs WildIdeas space
         header_ [class_ "ideas-header"] $ do
             h1_ [class_ "main-heading"] $ do
-                span_ [class_ "sub-heading"] "Wilde ideen"
-                "Was soll sich verändern?"
-            p_ [class_ "sub-header"] . span_ $
+                span_ [class_ "sub-heading", data_ "i18n" "space-wild-ideas-title"] "Wilde ideen"
+                span_ [data_ "i18n" "space-ask-ideas"] "Was soll sich verändern?"
+            p_ [class_ "sub-header"] . span_ [data_ "i18n" "space-ask-ideas-description"] $
                 "Du kannst hier jede lose Idee, die du im Kopf hast, einwerfen und kannst für " <>
                 "die Idee abstimmen und diese somit \"auf den Tisch bringen\"."
             when (CanCreateIdea `elem` capabilities ctx) $
-                button_ [onclick_ (U.createIdea (IdeaLocationSpace space)), class_ "btn-cta m-large"] "+ Neue Idee"
+                button_ [onclick_ (U.createIdea (IdeaLocationSpace space)), class_ "btn-cta m-large", data_ "i18n" "space-new-idea"] "+ Neue Idee"
         div_ [class_ "m-shadow"] $ do
             div_ [class_ "ideas-list"] $ toHtml ideasAndNumVoters
 
@@ -121,13 +121,13 @@ instance ToHtml PageOverviewOfTopics where
                 -- WARNING: This button is not in the design. But it should be here for
                 -- user experience reasons.
                 when (CanCreateTopic `elem` caps) $
-                    button_ [onclick_ (U.createTopic space), class_ "btn-cta m-large"] "+ Neues Thema"
+                    button_ [onclick_ (U.createTopic space), class_ "btn-cta m-large", data_ "i18n" "topic-new"] "+ Neues Thema"
 
             callToActionOnList'
                 (do
-                    "Hier gibt es noch keine Themen.  "
+                    span_ [data_ "i18n" "topic-empty"] "Hier gibt es noch keine Themen.  "
                     when (CanCreateTopic `elem` caps) .
-                        a_ [href_ $ U.createTopic space] $
+                        a_ [href_ $ U.createTopic space, data_ "i18n" "topic-create-first"] $
                             "Lege das erste Thema an!")
                 (\topic -> div_ [class_ "col-1-3 theme-grid-col"] $ do
                     div_ [class_ ("theme-grid-item phase-" <> cs (show (topic ^. topicPhase)))] $ do
@@ -144,13 +144,13 @@ instance ToHtml PageOverviewOfTopics where
                                  ]
                             div_ [class_ "theme-grid-item-text"] $ do
                                 span_ [class_ "theme-grid-item-phase"] $
-                                    topic ^. topicPhase . uilabeledST . html
+                                    topic ^. topicPhase . uilabeledST . to (\x -> span_ [data_ "i18n" $ "idea-phase-" <> x] $ toHtml x)
                                 h2_   [class_ "theme-grid-item-title"] $
                                     topic ^. topicTitle . html
                                 div_  [class_ "theme-grid-item-blurb"] $
                                     topic ^. topicDesc  . html
 
-                                span_ [class_ "theme-grid-item-link"]
+                                span_ [class_ "theme-grid-item-link", data_ "i18n" "topic-view-theme"]
                                     "Thema anzeigen")
                 topics
 
@@ -166,11 +166,14 @@ instance ToHtml Tabs where
         li_ [class_ . ST.unwords $
              "tab-item tab-item-wild-ideas" : ["m-active" | activeTab == WildIdeas]] $ do
             a_ [href_ $ U.listIdeas loc] $ do
-                "Wilde Ideen " >> toHtml (spaceDesc space)
+                span_ [data_ "i18n" "space-wild-ideas"] "Wilde Ideen "
+                span_ [data_ "i18n" "idea-wild-ideas-of"] "der "
+                span_ $ toHtml (spaceDesc space)
         li_ [class_ . ST.unwords $
              "tab-item tab-item-topics" : ["m-active" | activeTab == Topics]] $ do
             a_ [href_ $ U.listTopics space] $ do
-                "Themen auf dem Tisch " >> toHtml (spaceDesc space)
+                span_ [data_ "i18n" "space-idea-topics"] "Themen auf dem Tisch "
+                span_ $ toHtml (spaceDesc space)
       where
-        spaceDesc ispace = "der " <> uilabelST ispace
+        spaceDesc ispace = uilabelST ispace
         loc              = IdeaLocationSpace space

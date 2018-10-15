@@ -305,12 +305,12 @@ type instance Proto Idea = ProtoIdea
 
 -- | "Kategorie"
 data Category =
-    CatRules        -- ^ "Regel"
-  | CatEquipment    -- ^ "Ausstattung"
-  | CatActivities   -- ^ "Aktivitäten"
-  | CatTeaching     -- ^ "Unterricht"
-  | CatTime         -- ^ "Zeit"
-  | CatEnvironment  -- ^ "Umgebung"
+    CatRules        -- ^ "Rules"
+  | CatEquipment    -- ^ "Equipment"
+  | CatActivities   -- ^ "Activities"
+  | CatTeaching     -- ^ "Workshop"
+  | CatTime         -- ^ "Time"
+  | CatEnvironment  -- ^ "Surroundings"
   deriving (Eq, Ord, Bounded, Enum, Show, Read, Generic, Typeable, Data)
 
 -- | With delegation of likes, a unit type isn't enough for this, we need a boolean.  If a delegate
@@ -730,7 +730,7 @@ instance HasUriPart Role where
 
 instance HasUILabel Category where
     uilabel = \case
-        CatRules       -> "Regeln"
+        CatRules       -> "Regel"
         CatEquipment   -> "Ausstattung"
         CatActivities  -> "Aktivitäten"
         CatTeaching    -> "Unterricht"
@@ -820,7 +820,7 @@ instance Ord IdeaSpace where
 
 instance HasUILabel IdeaSpace where
     uilabel = \case
-        SchoolSpace    -> "Schule"
+        SchoolSpace    -> "Generation Europe"
         ClassSpace c   -> uilabel c
 
 instance HasUriPart IdeaSpace where

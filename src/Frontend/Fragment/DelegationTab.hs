@@ -28,7 +28,7 @@ renderDelegations :: forall m. Monad m => WhatDelegationPage -> DelegationListsM
 renderDelegations whatsPage delegations =
     callToActionOnList
         (do
-           "Keine Beauftragungen in diesem Geltungsbereich.  "
+           span_ [data_ "i18n" "no-delegations-in-scope"] "Keine Beauftragungen in diesem Geltungsbereich.  "
            when (CanDelegate `elem` capabilities (wdpCapCtx whatsPage)) $
                a_ [href_ delegationLink] "Beauftrage deine Stimme!")
         (ul_ [class_ "small-avatar-list"])

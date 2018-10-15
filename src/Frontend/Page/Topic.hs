@@ -140,7 +140,7 @@ tabLink tabsOrDropdown topic curTab targetTab =
   case targetTab of
     TabIdeas ListIdeasInTopicTabAll      _ -> ideaLnk  "tab-ideas"       "Alle Ideen"
     TabIdeas ListIdeasInTopicTabVoting   _ -> ideaLnk  "tab-voting"      "Ideen in der Abstimmung"
-    TabIdeas ListIdeasInTopicTabAccepted _ -> ideaLnk  "tab-voting"      "Angenommene Ideen"
+    TabIdeas ListIdeasInTopicTabAccepted _ -> ideaLnk  "tab-accepted"      "Angenommene Ideen"
     TabIdeas ListIdeasInTopicTabWinning  _ -> ideaLnk  "tab-winning"     "Gewinner"
     TabDelegation                          -> delegLnk "tab-delegations" "Beauftrage Stimmen"
   where
@@ -150,8 +150,8 @@ tabLink tabsOrDropdown topic curTab targetTab =
     isSelected = tabSelected tabsOrDropdown (curTab ^? topicTab) (targetTab ^? topicTab)
 
     lnk url ident = case tabsOrDropdown of
-      Mobile  -> option_ $ id_ ident : isSelected <> [value_ . absoluteUriPath . U.relPath $ url]
-      Desktop -> a_      $ id_ ident : isSelected <> [href_ url]
+      Mobile  -> option_ $ id_ ident : isSelected <> [value_ . absoluteUriPath . U.relPath $ url, data_ "i18n" $ "topic-" <> ident]
+      Desktop -> a_      $ id_ ident : isSelected <> [href_ url, data_ "i18n" $ "topic-" <> ident]
 
 instance ToHtml ViewTopic where
     toHtmlRaw = toHtml
@@ -179,7 +179,7 @@ viewTopicHeaderDiv now ctx topic tab delegation = do
 
     div_ [class_ $ "topic-header phase-" <> cs (show phase)] $ do
         header_ [class_ "detail-header"] $ do
-            a_ [class_ "btn m-back detail-header-back", href_ $ U.listTopics space] "Zu Allen Themen"
+            a_ [class_ "btn m-back detail-header-back", href_ $ U.listTopics space, data_ "i18n" "topic-back"] "Zu Allen Themen"
             let canEditTopic          = CanEditTopic          `elem` caps
                 canPhaseForwardTopic  = CanPhaseForwardTopic  `elem` caps
                 canPhaseBackwardTopic = CanPhaseBackwardTopic `elem` caps
@@ -188,22 +188,22 @@ viewTopicHeaderDiv now ctx topic tab delegation = do
             contextMenu
                 [ ( canEditTopic
                   , "icon-pencil"
-                  , a_ [id_ "edit-topic", href_ $ U.editTopic space topicId]
+                  , a_ [id_ "edit-topic", href_ $ U.editTopic space topicId, data_ "i18n" "topic-edit-topic"]
                       "Thema bearbeiten"
                   )
                 , ( canDeleteTopic
                   , "icon-trash-o"
-                  , postLink_ [class_ "btn-plain", jsReloadOnClick] (U.deleteTopic space topicId)
+                  , postLink_ [class_ "btn-plain", jsReloadOnClick, data_ "i18n" "topic-delete-topic"] (U.deleteTopic space topicId)
                       "Thema löschen"
                   )
                 , ( canPhaseForwardTopic
                   , "icon-step-forward"
-                  , postLink_ [class_ "btn-plain", jsReloadOnClick] (U.adminTopicNextPhase topicId)
+                  , postLink_ [class_ "btn-plain", jsReloadOnClick, data_ "i18n" "topic-advance-topic-phase"] (U.adminTopicNextPhase topicId)
                       "Nächste Phase"
                   )
                 , ( canPhaseBackwardTopic
                   , "icon-step-backward"
-                  , postLink_ [class_ "btn-plain", jsReloadOnClick] (U.adminTopicVotingPrevPhase topicId)
+                  , postLink_ [class_ "btn-plain", jsReloadOnClick,  data_ "i18n" "topic-back-topic-phase"] (U.adminTopicVotingPrevPhase topicId)
                       "Vorherige Phase"
                   )
                 ]
@@ -216,6 +216,7 @@ viewTopicHeaderDiv now ctx topic tab delegation = do
             let createIdeaButton = when (CanCreateIdea `elem` caps) .
                     a_ [ class_ "btn-cta heroic-cta m-large"
                        , href_ . U.createIdea $ IdeaLocationTopic space topicId
+                       , data_ "i18n" "space-new-idea"
                        ] $
                       "+ Neue Idee"
                 delegateVoteButton = when (any (`elem` caps) [CanDelegateInClass, CanDelegateInSchool]) $ do
@@ -224,8 +225,8 @@ viewTopicHeaderDiv now ctx topic tab delegation = do
                        ] $ do
                       i_ [class_ "icon-bullhorn"] nil
                       if isNothing delegation
-                            then "Stimme beauftragen"
-                            else "Beauftragung ändern"
+                            then span_ [data_ "i18n" "topic-delegate"] "Stimme beauftragen"
+                            else span_ [data_ "i18n" "topic-delegate-change"] "Beauftragung ändern"
 
             case phase of
                 PhaseWildIdea{}   -> createIdeaButton
@@ -235,7 +236,7 @@ viewTopicHeaderDiv now ctx topic tab delegation = do
                 PhaseResult       -> nil
 
         forM_ delegation $ \(view delegationFullTo -> delegate) -> do
-            p_ [class_ "sub-heading"] $ do
+            p_ [class_ "sub-heading", data_ "i18n" "topic-your-delegates"] $ do
                 "Derzeit Stimmt für dich ab: "
                 a_ [href_ $ U.viewUserProfile delegate] $ do
                     delegate ^. userLogin . unUserLogin . html
@@ -299,30 +300,31 @@ instance FormPage CreateTopic where
 
     formPage v form ct =
         semanticDiv' [class_ "container-main container-narrow popup-page"] ct $ do
-            h1_ [class_ "main-heading"] "Thema erstellen"
+            h1_ [class_ "main-heading", data_ "i18n" "topiccreation-creation"] "Thema erstellen"
             form $ createOrEditTopic v (ct ^. ctIdeas)
             footer_ [class_ "form-footer"] $
-                a_ [class_ "btn", href_ $ U.listTopics (ct ^. ctIdeaSpace)] "Abbrechen"
+                a_ [class_ "btn", data_ "i18n" "topiccreation-cancel", href_ $ U.listTopics (ct ^. ctIdeaSpace)] "Abbrechen"
 
 createOrEditTopic :: Monad m => View (HtmlT m ()) -> [IdeaStats] -> HtmlT m ()
 createOrEditTopic v ideas = do
     label_ $ do
-        span_ [class_ "label-text"] "Wie soll der Titel des Themas lauten?"
-        inputText_ [class_ "m-small", placeholder_ "z.B. Computerraum"]
+        span_ [class_ "label-text", data_ "i18n" "topiccreation-name"] "Wie soll der Titel des Themas lauten?"
+        inputText_ [class_ "m-small", data_ "i18n" "[placeholder]topiccreation-name-example", placeholder_ "z.B. Computerraum"]
             "title" v
     label_ $ do
-        span_ [class_ "label-text"] "Beschreiben Sie das Thema"
-        inputTextArea_ [placeholder_ "Was haben die Ideen dieses Themas gemeinsam?"]
+        span_ [class_ "label-text", data_ "i18n" "topiccreation-description"] "Beschreiben Sie das Thema"
+        inputTextArea_ [data_ "i18n" "[placeholder]topiccreation-description-details", placeholder_ "Was haben die Ideen dieses Themas gemeinsam?"]
             Nothing Nothing "desc" v
     label_ $ do
-        span_ [class_ "label-text"] $ if null ideas
+        let i18n = if null ideas then "topiccreation-no-ideas" else "topiccreation-choose-ideas"
+        span_ [class_ "label-text", data_ "i18n" i18n] $ if null ideas
             then "Es stehen keine Ideen zur Auswahl."
             else "Fügen Sie weitere wilde Ideen dem neuen Thema hinzu"
         formPageIdeaSelection v ideas
         -- FIXME: mark the one with the quorum that triggered creating this
         -- topic as selected by default.  (see also: FIXME at makeFormIdeaSelection.)
     footer_ [class_ "form-footer"] $ do
-        DF.inputSubmit "Veröffentlichen"
+        input_ [type_ "submit", data_ "i18n" "[value]topiccreation-submit", value_ "Veröffentlichen"]
 
 instance FormPage EditTopic where
     -- While the input page contains all the wild ideas the result page only contains

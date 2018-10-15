@@ -93,12 +93,12 @@ ideaVoteLikeButtons ctx (IdeaStats idea phase _quo _voters) = do
                 = nil
             | userLikesIdea user idea
                 = postButton_
-                    [class_ "btn-cta voting-button button-group-item", jsReloadOnClick]
+                    [class_ "btn-cta voting-button button-group-item", data_ "i18n" "idea-not-on-table", jsReloadOnClick]
                     (U.delikeIdea idea)
                     "Doch nicht auf den Tisch?"
             | otherwise
                 = postButton_
-                    [class_ "btn-cta voting-button button-group-item", jsReloadOnClick]
+                    [class_ "btn-cta voting-button button-group-item", data_ "i18n" "idea-on-table", jsReloadOnClick]
                     (U.likeIdea idea)
                     "Auf den Tisch!"
 

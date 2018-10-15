@@ -221,19 +221,23 @@ instance Page EditComment where
 
 -- * templates
 
-numberWithUnit :: Monad m => Int -> ST -> ST -> HtmlT m ()
-numberWithUnit i singular_ plural_ =
-    toHtml (show i) <>
-    toHtmlRaw nbsp <>
-    toHtml (if i == 1 then singular_ else plural_)
+numberWithUnit :: Monad m => Int -> ST -> ST -> ST -> HtmlT m ()
+numberWithUnit i i18n singular_ plural_ = do
+    toHtml (show i)
+    toHtmlRaw nbsp
+    if i == 1
+      then
+        span_ [data_ "i18n" $ i18n <> "-singular"] $ toHtml singular_
+      else
+        span_ [data_ "i18n" $ i18n <> "-plural"] $ toHtml plural_
 
 linkToIdeaLocation :: Monad m => Idea -> HtmlT m ()
 linkToIdeaLocation idea = do
     a_ [ class_ "btn m-back detail-header-back"
        , href_ . U.listIdeas $ idea ^. ideaLocation
        ] $ case idea ^. ideaLocation of
-             IdeaLocationSpace{} -> "Zum Ideenraum"
-             IdeaLocationTopic{} -> "Zum Thema"
+         IdeaLocationSpace{} -> span_ [data_ "i18n" "move-to-wild-ideas"] "Zum Ideenraum"
+         IdeaLocationTopic{} -> span_ [data_ "i18n" "idea-back-to-topic"] "Zum Thema"
 
 instance ToHtml ViewIdea where
     toHtmlRaw = toHtml
@@ -254,19 +258,19 @@ instance ToHtml ViewIdea where
                 contextMenu
                     [ ( CanEditAndDeleteIdea `elem` caps
                       , "icon-pencil"
-                      , a_ [href_ $ U.editIdea idea] "bearbeiten"
+                      , a_ [href_ $ U.editIdea idea, data_ "i18n" "idea-suggestion-edit"] "bearbeiten"
                       )
                     , ( ideaReachedQuorum stats && CanCreateTopic `elem` caps
                       , "icon-asterisk"
-                      , a_ [href_ $ U.createTopic spc] "Thema erstellen"
+                      , a_ [href_ $ U.createTopic spc, data_ "i18n" "topiccreation-creation"] "Thema erstellen"
                       )
                     , ( CanMoveBetweenLocations `elem` caps
                       , "icon-sign-in"
-                      , a_ [href_ $ U.moveIdea idea] "Idee verschieben"
+                      , a_ [href_ $ U.moveIdea idea, data_ "i18n" "idea-move"] "Idee verschieben"
                       )
                     , ( True
                       , "icon-flag"
-                      , a_ [href_ (U.reportIdea idea)] "melden"
+                      , a_ [href_ (U.reportIdea idea), data_ "i18n" "idea-suggestion-report"] "melden"
                       )
                     ]
 
@@ -276,18 +280,18 @@ instance ToHtml ViewIdea where
             div_ [class_ "sub-header meta-text"] $ do
                 idea ^. createdAt . to simpleTimestampToHtmlDate . html
             div_ [class_ "sub-header meta-text"] $ do
-                "von "
+                span_ [data_ "i18n" "idea-from"] "von "
                 a_ [ href_ $ U.userIdeas (idea ^. createdBy)
                    ] $ idea ^. createdByLogin . unUserLogin . html
                 " / "
                 let l = do
-                        numberWithUnit totalLikes "Quorum-Stimme" "Quorum-Stimmen"
+                        numberWithUnit totalLikes "idea-quorum-votes" "Quorum-Stimme" "Quorum-Stimmen"
                         toHtmlRaw (" " <> nbsp <> " / " <> nbsp <> " ")
                     v = do
-                        numberWithUnit totalVotes "Stimme" "Stimmen"
+                        numberWithUnit totalVotes "idea-votes" "Stimme" "Stimmen"
                         toHtmlRaw (" " <> nbsp <> " / " <> nbsp <> " ")
                     c = do
-                        numberWithUnit totalComments "Verbesserungsvorschlag" "Verbesserungsvorschläge"
+                        numberWithUnit totalComments "idea-suggestions" "Verbesserungsvorschlag" "Verbesserungsvorschläge"
 
                 case phase of
                     PhaseWildIdea{}   -> l >> c
@@ -303,7 +307,7 @@ instance ToHtml ViewIdea where
             div_ [class_ "table-actions m-no-hover"] $ do
                 div_ [class_ "icon-list m-inline"] . ul_ $ do
                     when (has _PhaseWildIdea phase && ideaReachedQuorum stats) $ do
-                        li_ [class_ "icon-table"] $ span_ "Kann auf den Tisch"
+                        li_ [class_ "icon-table"] $ span_ [data_ "i18n" "idea-on-table"] "Kann auf den Tisch"
                         feasibilityIndicator idea
                     when (has _PhaseResult phase) $
                         if isWinning idea
@@ -322,7 +326,7 @@ instance ToHtml ViewIdea where
                             , onclick_ $ U.createTopic spc
                             ] $ do
                         i_ [class_ "icon-check"] nil
-                        "Thema anlegen"
+                        span_ [data_ "i18n" "idea-create-topic"] "Thema anlegen"
 
             div_ [class_ "button-group"] $ do
                 -- buttons
@@ -341,8 +345,8 @@ instance ToHtml ViewIdea where
                             ] $ do
                         i_ [class_ "icon-check"] nil
                         if isNothing $ creatorStatementOfIdea idea
-                            then "Statement abgeben"
-                            else "Statement ändern"
+                            then span_ [data_ "i18n" "idea-statement"] "Statement abgeben"
+                            else span_ [data_ "i18n" "idea-suggestion-edit"] "Statement ändern"
                 -- mark winning idea
                 when (isFeasibleIdea idea) $ do
                     when (CanMarkWinner `elem` caps) $ do
@@ -364,11 +368,14 @@ instance ToHtml ViewIdea where
             div_ [class_ "view-category"] $ do
                 case idea ^. ideaCategory of
                     Nothing -> do
-                        h2_ [class_ "sub-header"] "Diese Idee gehört zu keiner Kategorie"
+                        h2_ [class_ "sub-header", data_ "i18n" "idea-without-category"] "Diese Idee gehört zu keiner Kategorie"
                     Just cat -> do
-                        h2_ [class_ "sub-header"] "Diese Idee gehört zur Kategorie"
+                        h2_ [class_ "sub-header", data_ "i18n" "idea-categories"] "Diese Idee gehört zur Kategorie"
                         div_ [class_ "icon-list m-inline"] .
                             ul_ . toHtml $ CategoryLabel cat
+
+            div_ [class_ "translate"] $ do
+                h2_ [class_ "btn-cta comments-header-button", data_ "i18n" "translate"] "Übersetzen"
 
         -- comments
         section_ [class_ "comments"] $ do
@@ -376,18 +383,19 @@ instance ToHtml ViewIdea where
                 div_ [class_ "grid"] $ do
                     div_ [class_ "container-narrow"] $ do
                         h2_ [class_ "comments-header-heading"] $ do
-                            numberWithUnit totalComments
+                            numberWithUnit totalComments "idea-improvement-suggestions"
                                 "Verbesserungsvorschlag" "Verbesserungsvorschläge"
                         when (CanComment `elem` caps) $
                             button_ [ value_ "create_comment"
                                     , class_ "btn-cta comments-header-button"
+                                    , data_ "i18n" "new.comment"
                                     , onclick_ (U.commentOnIdea idea)]
                                 "Neuer Verbesserungsvorschlag"
             div_ [class_ "comments-body grid"] $ do
                 div_ [class_ "container-narrow"] $ do
                     callToActionOnList'
                         (when (CanComment `elem` caps) .
-                            a_ [href_ $ U.commentOnIdea idea] $
+                            a_ [href_ $ U.commentOnIdea idea, data_ "i18n" "idea-ask-first-suggestion"] $
                                 "Gib den ersten Verbesserungsvorschlag ab!")
                         (\comment -> toHtml $ CommentWidget (ctx & capCtxComment .~ Just comment) caps comment)
                         (idea ^. ideaComments)
@@ -398,9 +406,9 @@ feasibilityIndicator idea = do
     case _ideaJuryResult idea of
         Nothing -> nil
         Just (IdeaJuryResult _ (Feasible _)) -> do
-            li_ [class_ "icon-feasible"] $ span_ "durchführbar"
+            li_ [class_ "icon-feasible"] $ span_ [data_ "i18n" "idea-is-possible"] "durchführbar"
         Just (IdeaJuryResult _ (NotFeasible _)) -> do
-            li_ [class_ "icon-not-feasible"] $ span_ "nicht durchführbar"
+            li_ [class_ "icon-not-feasible"] $ span_ [data_ "i18n" "idea-not-possible"] "nicht durchführbar"
 
 feasibilityVerdict :: Monad m => Idea -> HtmlT m ()
 feasibilityVerdict idea =
@@ -423,12 +431,12 @@ feasibilityButtons renderJuryButtons idea caps =
                     , onclick_ $ U.judgeIdea idea IdeaFeasible
                     ] $ do
                 i_ [class_ "icon-check"] nil
-                "durchführbar"
-            button_ [ class_ "button-group-item btn-cta m-invalid"
-                    , onclick_ $ U.judgeIdea idea IdeaNotFeasible
+                span_ [data_ "i18n" "idea-is-possible"] "durchführbar"
+            button_ [ class_ "button-group-item btn-cta m-invalid",
+                      onclick_ $ U.judgeIdea idea IdeaNotFeasible
                     ] $ do
                 i_ [class_ "icon-times"] nil
-                "nicht durchführbar"
+                span_ [data_ "i18n" "idea-is-possible"] "nicht durchführbar"
 
 
 instance ToHtml ViewDeletedIdea where
@@ -483,27 +491,28 @@ createOrEditIdea :: (Monad m, Typeable page, Page page) =>
 createOrEditIdea eLocIdea v form p =
     semanticDiv' [class_ "container-main container-narrow popup-page"] p $ do
         let cancelUrl = either id (view ideaLocation) eLocIdea
-        h1_ [class_ "main-heading"] "Deine Idee"
+        h1_ [class_ "main-heading", data_ "i18n" "your-idea"] "Deine Idee"
         form $ do
             label_ $ do
-                span_ [class_ "label-text"] "Wie soll deine Idee heißen?"
-                inputText_ [class_ "m-small", placeholder_ "z.B. bessere Ausstattung im Computerraum"]
+                span_ [class_ "label-text", data_ "i18n" "idea-name"] "Wie soll deine Idee heißen?"
+                inputText_ [class_ "m-small", data_ "i18n" "[placeholder]idea-name-example", placeholder_ "z.B. bessere Ausstattung im Computerraum"]
                     "title" v
             let editDomId    :: ST = DF.viewName v <> ".idea-text"
                 previewDomId :: ST = editDomId <> "-preview"
             label_ $ do
-                span_ [class_ "label-text"] "Was möchtest du vorschlagen?"
-                inputTextArea_ [placeholder_ "Hier kannst du deine Idee so ausführlich wie möglich beschreiben..."]
+                span_ [class_ "label-text", data_ "i18n" "idea-suggestion"] "Was möchtest du vorschlagen?"
+                inputTextArea_ [placeholder_ "Hier kannst du deine Idee so ausführlich wie möglich beschreiben...", data_ "i18n" "[placeholder]idea-suggestion-description"]
                     Nothing Nothing "idea-text" v
                 a_ [ class_ "btn m-input-action"
+                   , data_ "i18n" "idea-show-preview"
                    , Lucid.onclick_ $ "showPreview('" <> editDomId <> "', '" <> previewDomId <> "')"
                    ]
                    "Vorschau einblenden"
             div_ [id_ previewDomId, class_ "markdown-preview m-closed"] nil
             formPageSelectCategory v
             footer_ [class_ "form-footer"] $ do
-                DF.inputSubmit "Idee veröffentlichen"
-                a_ [class_ "btn", href_ $ U.listIdeas cancelUrl] $ do
+                input_ [type_ "submit", data_ "i18n" "[value]idea-publish", value_ "Idee veröffentlichen"]
+                a_ [class_ "btn", data_ "i18n" "topiccreation-cancel", href_ $ U.listIdeas cancelUrl] $ do
                     -- FIXME: "are you sure?" dialog.
                     "abbrechen"
         case eLocIdea of
@@ -512,6 +521,7 @@ createOrEditIdea eLocIdea v form p =
                 footer_ [class_ "form-footer"] $ do
                     postButton_
                         [ class_ "btn-cta"
+                        , data_ "i18n" "idea-confirm-delete"
                         , jsRedirectOnClickConfirm "Idee wirklich löschen?"
                             (absoluteUriPath . U.relPath $ U.listIdeas cancelUrl)
                         ]
@@ -550,6 +560,10 @@ commentIdeaNote = Note
     , noteExplanation               = Nothing
     , noteLabelText                 = "Was möchtest du sagen? Hast du Fragen?"
     , noteFieldNameInValiationError = "Verbesserungsvorschlag"
+    , noteI18n                      = "idea-suggestion-to"
+    , noteHeaderTextLeft            = const "Verbesserungsvorschlag zu "
+    , noteHeaderTextMiddle          = view ideaTitle
+    , noteHeaderTextRight           = const ""
     }
 
 instance FormPage CommentOnIdea where
@@ -564,7 +578,7 @@ instance FormPage CommentOnIdea where
     makeForm CommentOnIdea{} =
         CommentContent <$> noteFormInput commentIdeaNote Nothing
 
-    formPage v form coi = semanticDiv coi . noteForm commentIdeaNote v form $ coi ^. coiIdea
+    formPage v form coi = semanticDiv coi . (\h -> noteForm commentIdeaNote v form h) $ coi ^. coiIdea
 
 instance FormPage EditComment where
     type FormPagePayload EditComment = Document
@@ -583,6 +597,10 @@ judgeIdeaNote juryType = Note
     , noteExplanation               = Nothing
     , noteLabelText                 = labelText
     , noteFieldNameInValiationError = "Anmerkungen zur Durchführbarkeit"
+    , noteI18n                      = "idea-possible-note"
+    , noteHeaderTextLeft            = const headerText
+    , noteHeaderTextMiddle          = view ideaTitle
+    , noteHeaderTextRight           = const ""
     }
   where
     headerText = case juryType of
@@ -616,10 +634,14 @@ instance FormPage JudgeIdea where
 
 creatorStatementNote :: Note Idea
 creatorStatementNote = Note
-    { noteHeaderText                = ("Ansage des Gewinners zur Idee " <>) . view ideaTitle
+    { noteHeaderText                = ("Ansage des Gewinners zur Idee" <>) . view ideaTitle
     , noteExplanation               = Nothing
     , noteLabelText                 = "Was möchtest du sagen?"
     , noteFieldNameInValiationError = "Statement des Autors"
+    , noteI18n                      = "idea-winners-message"
+    , noteHeaderTextLeft            = const "Ansage des Gewinners zur Idee"
+    , noteHeaderTextMiddle          = view ideaTitle
+    , noteHeaderTextRight           = const ""
     }
 
 instance FormPage CreatorStatement where
@@ -628,7 +650,7 @@ instance FormPage CreatorStatement where
     formAction      s   = U.creatorStatement $ s ^. csIdea
     redirectOf      s _ = U.viewIdea $ s ^. csIdea
     makeForm        s   = noteFormInput creatorStatementNote . creatorStatementOfIdea $ s ^. csIdea
-    formPage v form s   = semanticDiv s . noteForm creatorStatementNote v form $ s ^. csIdea
+    formPage v form s   = semanticDiv s . (\h -> noteForm creatorStatementNote v form h) $ s ^. csIdea
 
 newtype ReportCommentContent = ReportCommentContent
     { unReportCommentContent :: Document }
@@ -640,6 +662,10 @@ reportCommentNote = Note
     , noteExplanation               = Just "Hier kannst du einen Verbesserungsvorschlag wegen eines verletzenden oder anstößigen Inhalts beim Moderationsteam melden. Das Team erhält eine Benachrichtigung und wird den Verbesserungsvorschlag schnellstmöglich überprüfen. Bitte gib unten einen Grund an, warum du den Inhalt für anstößig oder verletzend hältst."
     , noteLabelText                 = "Was möchtest du melden?"
     , noteFieldNameInValiationError = "Bemerkung"
+    , noteI18n                      = "idea-comment-report"
+    , noteHeaderTextLeft            = const "Verbesserungsvorschlag melden"
+    , noteHeaderTextMiddle          = const ""
+    , noteHeaderTextRight           = const ""
     }
 
 instance FormPage ReportComment where
@@ -661,6 +687,10 @@ reportIdeaNote = Note
     , noteExplanation               = Just "Hier kannst du eine Idee wegen eines verletzenden oder anstößigen Inhalts beim Moderationsteam melden. Das Team erhält eine Benachrichtigung und wird die Idee schnellstmöglich überprüfen. Bitte gib unten einen Grund an, warum du den Inhalt für anstößig oder verletzend hältst."
     , noteLabelText                 = "Was möchtest du melden?"
     , noteFieldNameInValiationError = "Bemerkung"
+    , noteI18n                      = "idea-report"
+    , noteHeaderTextLeft            = const "Die Idee "
+    , noteHeaderTextMiddle          = view ideaTitle
+    , noteHeaderTextRight           = const " melden"
     }
 
 instance FormPage ReportIdea where
@@ -671,7 +701,7 @@ instance FormPage ReportIdea where
 
     makeForm _ = noteFormInput reportIdeaNote Nothing
 
-    formPage v form ri = semanticDiv ri . noteForm reportIdeaNote v form $ ri ^. riIdea
+    formPage v form ri = semanticDiv ri . (\h -> noteForm reportIdeaNote v form h) $ ri ^. riIdea
 
 
 -- * handlers

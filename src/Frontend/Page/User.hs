@@ -164,27 +164,28 @@ instance FormPage PageUserSettings where
 
     formPage v form p = do
         semanticDiv' [class_ "container-main container-narrow popup-page"] p $ do
-            h1_ [class_ "main-heading"] "Einstellungen"
+            h1_ [class_ "main-heading", data_ "i18n" "user-settings"] "Einstellungen"
             form $ do
                 label_ $ do
-                    span_ [class_ "label-text"] "E-mailadresse (optional)"
+                    span_ [class_ "label-text", data_ "i18n" "user-email"] "E-mailadresse (optional)"
                     inputText_ [class_ "m-small"] -- FIXME should be inputEmail_
                         "email" v
-                h2_ [class_ "label-header"] "Passwort ändern"
+                h2_ [class_ "label-header", data_ "i18n" "user-change-password"] "Passwort ändern"
                 label_ $ do
-                    span_ [class_ "label-text"] "aktuelles Passwort"
+                    span_ [class_ "label-text", data_ "i18n" "user-current-password"] "aktuelles Passwort"
                     inputPassword_ [class_ "m-small"]
                         "old-password" v
                 label_ $ do
-                    span_ [class_ "label-text"] "neues Passwort"
+                    span_ [class_ "label-text", data_ "i18n" "user-new-password"] "neues Passwort"
                     inputPassword_ [class_ "m-small"]
                         "new-password1" v
                 label_ $ do
-                    span_ [class_ "label-text"] "neues Passwort bestätigen"
+                    span_ [class_ "label-text", data_ "i18n" "user-new-confirm"] "neues Passwort bestätigen"
                     inputPassword_ [class_ "m-small"]
                         "new-password2" v
                 footer_ [class_ "form-footer"] $ do
-                    DF.inputSubmit "Änderungen speichern"
+                    input_ [type_ "submit", data_ "i18n" "[value]save-changes-button", value_ "Änderungen speichern"]
+
 
 
 userSettings :: forall m . ActionM m => FormPageHandler m PageUserSettings
@@ -212,15 +213,15 @@ userHeaderDiv ctx (Right (user, delegations)) =
         userHeaderDivCore user
         div_ [class_ "sub-header"] $ user ^. userDesc . html
 
-        let btn lnk = a_ [class_ "btn-cta heroic-cta m-large", href_ lnk]
-            editProfileBtn = btn (U.editUserProfile user) "+ Profil bearbeiten"
+        let btn lnk i18n = a_ [class_ "btn-cta heroic-cta m-large", href_ lnk, data_ "i18n" i18n]
+            editProfileBtn = btn (U.editUserProfile user) "user-profile-edit" $ "+ Profil bearbeiten"
 
         div_ [class_ "heroic-btn-group"] $ do
             let caps = capabilities ctx
             when (any (`elem` caps) [CanDelegateInClass, CanDelegateInSchool]) $ do
                 delegationButtons (ctx ^. capCtxUser) user delegations
             unless (isOwnProfile (ctx ^. capCtxUser) user) $
-                btn (U.reportUser user) "melden"
+                btn (U.reportUser user) "user-profile-report" "melden"
             when (CanEditUser `elem` caps) $ do
                 editProfileBtn
 
@@ -259,7 +260,7 @@ delegationButtons visiting visited delegations = do
                    d ^. delegationFullFrom . _Id == visiting ^. _Id &&
                    (ownProfile || d ^. delegationFullTo . _Id ==  visited ^. _Id))
 
-        butGet path = a_ [class_ "btn-cta heroic-cta m-large", href_ path]
+        butGet path i18n = a_ [class_ "btn-cta heroic-cta m-large", href_ path, data_ "i18n" i18n]
         butPost = postButton_ [class_ "btn-cta heroic-cta m-large", jsReloadOnClick]
         ispaces = SchoolSpace : (ClassSpace <$> Set.toList (commonSchoolClasses visiting visited))
 
@@ -268,8 +269,9 @@ delegationButtons visiting visited delegations = do
         div_ [class_ "heroic-cta-group"] $ do
             case (ownProfile, isActiveDelegation dscope) of
                 (True, _) ->
-                    butGet (U.createDelegation dscope)
-                        ("Deine Beauftragung für " <> uilabel ispace)
+                    butGet (U.createDelegation dscope) "" $ do
+                        span_ [data_ "i18n" "user-delegates-for"] "Deine Beauftragung für "
+                        span_ [] $ uilabel ispace
                 (False, True) ->
                     butPost (U.withdrawDelegationOnIdeaSpace visited ispace)
                         ("Beauftragung für " <> uilabel ispace <> " entziehen")
@@ -281,7 +283,8 @@ delegationButtons visiting visited delegations = do
             when (visiting ^. _Id == visited ^. _Id) $ do
                 forM_ (activeDelegation dscope) $ \(DelegationFull _ _ delegate) -> do
                     p_ [class_ "sub-heading"] $ do
-                        "Derzeit stimmt für dich ab: "
+                        span_ [data_ "i18n" "user-delegates-idea"] $ do
+                          "Derzeit stimmt für dich ab: "
                         a_ [href_ $ U.viewUserProfile delegate] $ do
                             delegate ^. userLogin . unUserLogin . html
 
@@ -312,19 +315,19 @@ userProfileTab ctx activeTab user = when (canCreateIdeas' || canDelegate') $ do
     canDelegate'    = canDelegate ctx
 
     allTabs dd = do
-        when canCreateIdeas' $ tabLink dd UserIdeasTab      (U.viewUserProfile user)     "Erstellte Ideen"
-        when canDelegate'    $ tabLink dd UserDelegateesTab (U.userDelegationsTo user)   "Für wen stimme ich ab?"
-        when canDelegate'    $ tabLink dd UserDelegatesTab  (U.userDelegationsFrom user) "Wer stimmt für mich ab?"
+        when canCreateIdeas' $ tabLink dd UserIdeasTab      (U.viewUserProfile user) "user-created-ideas" "Erstellte Ideen"
+        when canDelegate'    $ tabLink dd UserDelegateesTab (U.userDelegationsTo user) "user-who-delegations" "Für wen stimme ich ab?"
+        when canDelegate'    $ tabLink dd UserDelegatesTab  (U.userDelegationsFrom user) "user-who-delegates" "Wer stimmt für mich ab?"
 
     tabLink True  = tabLinkDropdown
     tabLink False = tabLinkDiv
 
-    tabLinkDropdown t path
-        = option_ $ [selected_ "true" | t == activeTab] <> [value_ . absoluteUriPath . U.relPath $ path]
+    tabLinkDropdown t path i18n
+        = option_ $ [selected_ "true" | t == activeTab] <> [value_ . absoluteUriPath . U.relPath $ path] <> [data_ "i18n" i18n]
 
-    tabLinkDiv t path
-        | t == activeTab = span_ [class_ "heroic-tab-item m-active"]
-        | otherwise      = a_    [class_ "heroic-tab-item", href_ path]
+    tabLinkDiv t path i18n
+        | t == activeTab = span_ [class_ "heroic-tab-item m-active", data_ "i18n" i18n]
+        | otherwise      = a_    [class_ "heroic-tab-item", href_ path, data_ "i18n" i18n]
 
 instance ToHtml PageUserProfileCreatedIdeas where
     toHtmlRaw = toHtml
@@ -455,10 +458,13 @@ instance FormPage EditUserProfile where
         semanticDiv' [class_ "container-main container-narrow"] p $ do
             div_ [class_ "hero-unit"] $ do
                 userHeaderDivCore user
-                h2_ [class_ "sub-heading"] .
-                    toHtml $ if isOwnProfile (ctx ^. capCtxUser) user
-                        then "Eigenes Nutzerprofil bearbeiten"
-                        else "Nutzerprofil von " <> user ^. userLogin . unUserLogin <> " bearbeiten"
+                h2_ [class_ "sub-heading"] $ do
+                    if isOwnProfile (ctx ^. capCtxUser) user
+                        then span_ [data_ "i18n" "user-edit-own-profile"] "Eigenes Nutzerprofil bearbeiten"
+                        else do
+                          span_ [data_ "i18n" "user-edit-profile"] "Nutzerprofil von "
+                          (user ^. userLogin . unUserLogin . html)
+                          span_ [data_ "i18n" "edit"] " bearbeiten"
 
             form $ do
                 div_ $ do
@@ -479,15 +485,15 @@ instance FormPage EditUserProfile where
                         p_ $ do
                             "Es darf nicht größer sein als " >> avatarMaxByteSize ^. html >> "."
                     label_ $ do
-                        span_ [class_ "label-text"] "Profilbild"
+                        span_ [class_ "label-text", data_ "i18n" "user-profile-picture"] "Profilbild"
                         DF.inputFile "avatar" v
                         br_ nil
                         br_ nil
                     label_ $ do
-                        span_ [class_ "label-text"] "Beschreibung"
+                        span_ [class_ "label-text", data_ "i18n" "user-description"] "Beschreibung"
                         inputTextArea_ [placeholder_ "..."] Nothing Nothing "desc" v
                     footer_ [class_ "form-footer"] $ do
-                        DF.inputSubmit "Änderungen speichern"
+                        input_ [type_ "submit", data_ "i18n" "[value]save-changes-button", value_ "Änderungen speichern"]
                         cancelButton p ()
 
 validateImageFile :: (Monad n, ActionM m) => Maybe FilePath -> m (DF.Result (HtmlT n ()) (Maybe DynamicImage))
@@ -524,6 +530,10 @@ reportUserNote = Note
     , noteExplanation               = Just "Hier kannst du ein Nutzerprofil wegen eines verletzenden oder anstößigen Inhalts beim Moderationsteam melden. Das Team erhält eine Benachrichtigung und wird die Idee schnellstmöglich überprüfen. Bitte gib unten einen Grund an, warum du den Inhalt für anstößig oder verletzend hältst."
     , noteLabelText                 = "Warum möchtest du das Nutzerprofil melden?"
     , noteFieldNameInValiationError = "Begründung"
+    , noteI18n                      = "user-report"
+    , noteHeaderTextLeft            = const "Report: "
+    , noteHeaderTextRight           = view (userLogin . unUserLogin)
+    , noteHeaderTextMiddle          = const ""
     }
 
 instance FormPage ReportUserProfile where

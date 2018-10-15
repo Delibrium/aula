@@ -58,22 +58,22 @@ commentToHtml w = div_ [id_ . U.anchor $ comment ^. _Id] $ do
         CommentVotesWidget (w ^. cwIdeaCaps) comment ^. html
     div_ [class_ "comments-body"] $ do
         if comment ^. commentDeleted
-            then "[Inhalt gelöscht]"
+            then span_ [data_ "i18n" "deleted-content"] "[Inhalt gelöscht]"
             else comment ^. commentText . html
     unless (comment ^. commentDeleted) . footer_ [class_ "comment-footer"] $ do
         div_ [class_ "comment-footer-buttons"] $ do
             when (CanComment `elem` w ^. cwIdeaCaps && CanReplyComment `elem` comCaps) .
                 button_ [class_ "btn comment-footer-button", onclick_ $ U.replyToComment comment] $ do
                     i_ [class_ "icon-reply"] nil
-                    "antworten"
+                    span_ [data_ "i18n" "answer"] "antworten"
             a_ [class_ "btn comment-footer-button", href_ (U.reportComment comment)] $ do
                 i_ [class_ "icon-flag"] nil
-                "melden"
+                span_ [data_ "i18n" "report"] "melden"
             when (CanEditComment `elem` comCaps) $ do
                 let edit = commentNestingElim U.editComment U.editReply $ commentNesting comment
                 a_ [class_ "btn comment-footer-button", href_ (edit comment)] $ do
                     i_ [class_ "icon-pencil"] nil
-                    "bearbeiten"
+                    span_ [data_ "i18n" "idea-suggestion-edit"] "bearbeiten"
             when (CanDeleteComment `elem` comCaps) $ do
                 let msg = "Kommentar wirklich loeschen?"
                                           -- FIXME: umlauts.  `ö`, `\\u00F6`, or `&ouml;` won't do it.
@@ -82,7 +82,7 @@ commentToHtml w = div_ [id_ . U.anchor $ comment ^. _Id] $ do
                             ]
                             (U.deleteComment comment) $ do
                     i_ [class_ "icon-trash-o"] nil
-                    "löschen"
+                    span_ [data_ "i18n" "idea-suggestion-delete"] "löschen"
   where
     comment = w ^. cwComment
     comCaps = capabilities (w ^. cwCapCtx)
